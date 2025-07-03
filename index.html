@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- SEO 메타 태그 -->
+    <meta name="description" content="얼굴인식 센서 데이터를 실시간으로 분석하는 대시보드">
+    <meta name="keywords" content="face recognition, sensor data, analytics, 얼굴인식, 센서 데이터, 분석">
+    <meta name="author" content="Gayoung Shin">
+    
+    <!-- Open Graph 메타 태그 (소셜 미디어 공유용) -->
+    <meta property="og:title" content="얼굴인식 센서 데이터 분석 대시보드">
+    <meta property="og:description" content="CSV 파일을 업로드하여 센서 데이터를 분석하세요">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com">
+    <meta property="og:image" content="https://yourdomain.com/preview.png">
+    
+    <!-- 파비콘 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    
+    <title>얼굴인식 센서 데이터 분석 대시보드</title>
+    
+    <!-- 외부 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin: 20px 0;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .file-input-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .metric {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .metric:hover {
+            transform: scale(1.02);
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #2a5298;
+        }
+        
+        .metric-unit {
+            font-size: 0.8em;
+            color: #888;
+            margin-left: 5px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .status.good {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .status.warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .status.danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .full-width-card {
+            grid-column: 1 / -1;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .gesture-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .gesture-list li {
+            background: #e3f2fd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .face-preview {
+            width: 100%;
+            height: 200px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .face-indicator {
+            width: 80px;
+            height: 80px;
+            background: #2196f3;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .face-indicator::before,
+        .face-indicator::after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .face-indicator::before {
+            width: 15px;
+            height: 15px;
+            top: 20px;
+            left: 20px;
+        }
+        
+        .face-indicator::after {
+            width: 15px;
+            height: 15px;
+            top: 20px;
+            right: 20px;
+        }
+        
+        /* 모바일 반응형 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .header p {
+                font-size: 1em;
+            }
+            
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .metric-value {
+                font-size: 1.5em;
+            }
+            
+            .file-input-button {
+                padding: 12px 30px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 얼굴인식 센서 데이터 분석 대시보드</h1>
+            <p>센서 데이터를 업로드하여 실시간으로 분석 결과를 확인하세요</p>
+        </div>
+        
+        <div class="upload-section">
+            <h2>CSV 파일 업로드</h2>
+            <p>얼굴인식 센서 데이터 CSV 파일을 선택해주세요</p>
+            <div class="file-input-wrapper">
+                <input type="file" id="csvFile" accept=".csv">
+                <div class="file-input-button">📁 파일 선택</div>
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>데이터 분석 중...</p>
+            </div>
+        </div>
+        
+        <div class="dashboard" id="dashboard" style="display: none;">
+            <!-- 얼굴 안정성 카드 -->
+            <div class="card">
+                <h2>📊 얼굴 안정성 분석</h2>
+                <div class="metric">
+                    <div class="metric-label">전체 안정성 점수</div>
+                    <div class="metric-value" id="stabilityScore">-</div>
+                    <div class="status" id="stabilityStatus">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">상하 움직임 (Pitch)</div>
+                    <div class="metric-value" id="pitchStability">-<span class="metric-unit">°</span></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">좌우 움직임 (Yaw)</div>
+                    <div class="metric-value" id="yawStability">-<span class="metric-unit">°</span></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">기울임 (Roll)</div>
+                    <div class="metric-value" id="rollStability">-<span class="metric-unit">°</span></div>
+                </div>
+            </div>
+            
+            <!-- 조명 환경 카드 -->
+            <div class="card">
+                <h2>💡 조명 환경 분석</h2>
+                <div class="metric">
+                    <div class="metric-label">평균 조도</div>
+                    <div class="metric-value" id="avgLight">-<span class="metric-unit">lux</span></div>
+                    <div class="status" id="lightStatus">-</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="lightChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 정면 응시도 카드 -->
+            <div class="card">
+                <h2>👁️ 얼굴 방향 분석</h2>
+                <div class="face-preview">
+                    <div class="face-indicator" id="faceIndicator"></div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">정면 응시도</div>
+                    <div class="metric-value" id="orientationScore">-<span class="metric-unit">%</span></div>
+                    <div class="status" id="orientationStatus">-</div>
+                </div>
+            </div>
+            
+            <!-- 보안 분석 카드 -->
+            <div class="card">
+                <h2>🔒 보안 분석</h2>
+                <div class="metric">
+                    <div class="metric-label">스푸핑 감지</div>
+                    <div class="metric-value" id="spoofingResult" style="font-size: 1.2em;">-</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">머리 제스처</div>
+                    <ul class="gesture-list" id="gestureList">
+                        <li>데이터를 업로드해주세요</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 시계열 차트 -->
+            <div class="card full-width-card">
+                <h2>📈 얼굴 각도 변화 추이</h2>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="angleChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- 방향 분포 차트 -->
+            <div class="card full-width-card">
+                <h2>🎯 얼굴 방향 분포도</h2>
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let angleChart = null;
+        let lightChart = null;
+        let distributionChart = null;
+        
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                document.getElementById('loading').classList.add('active');
+                parseCSV(file);
+            }
+        });
+        
+        function parseCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: false,  // 문자열로 유지
+                delimiter: ',',
+                complete: function(results) {
+                    // 데이터 정제
+                    const cleanData = results.data.filter(row => row.ID && row.ID.trim() !== '');
+                    analyzeData(cleanData);
+                    document.getElementById('loading').classList.remove('active');
+                    document.getElementById('dashboard').style.display = 'grid';
+                }
+            });
+        }
+        
+        function analyzeData(data) {
+            // 데이터 전처리
+            const processedData = [];
+            
+            data.forEach(row => {
+                try {
+                    // 각 컬럼이 존재하는지 확인
+                    const rawRotationCol = Object.keys(row).find(key => key.includes('Raw Rotation Vector'));
+                    const corrQuatCol = Object.keys(row).find(key => key.includes('Corrected Quaternion'));
+                    const eulerCol = Object.keys(row).find(key => key.includes('Euler Angles'));
+                    const ambientCol = Object.keys(row).find(key => key.includes('Ambient Light'));
+                    
+                    if (!rawRotationCol || !row[rawRotationCol]) return;
+                    
+                    // 벡터 데이터 파싱
+                    const rawRotation = row[rawRotationCol].split(',').map(v => parseFloat(v.trim()));
+                    const corrQuaternion = row[corrQuatCol] ? row[corrQuatCol].split(',').map(v => parseFloat(v.trim())) : [0,0,0,1];
+                    const eulerAngles = row[eulerCol] ? row[eulerCol].split(',').map(v => parseFloat(v.trim())) : [0,0,0];
+                    const ambientLight = row[ambientCol] ? parseFloat(row[ambientCol]) : 0;
+                    
+                    // 유효한 데이터인지 확인
+                    if (rawRotation.length >= 4 && eulerAngles.length >= 3) {
+                        processedData.push({
+                            id: row.ID,
+                            rawX: rawRotation[0], rawY: rawRotation[1], rawZ: rawRotation[2], rawW: rawRotation[3],
+                            corrX: corrQuaternion[0], corrY: corrQuaternion[1], corrZ: corrQuaternion[2], corrW: corrQuaternion[3],
+                            eulerX: eulerAngles[0], eulerY: eulerAngles[1], eulerZ: eulerAngles[2],
+                            ambientLight: ambientLight
+                        });
+                    }
+                } catch (e) {
+                    console.error('데이터 파싱 오류:', e);
+                }
+            });
+            
+            if (processedData.length === 0) {
+                alert('유효한 데이터가 없습니다. CSV 파일 형식을 확인해주세요.');
+                return;
+            }
+            
+            console.log('처리된 데이터:', processedData.length, '개');
+            
+            // 1. 얼굴 안정성 분석
+            analyzeStability(processedData);
+            
+            // 2. 조명 환경 분석
+            analyzeLighting(processedData);
+            
+            // 3. 정면 응시도 분석
+            analyzeOrientation(processedData);
+            
+            // 4. 스푸핑 감지
+            detectSpoofing(processedData);
+            
+            // 5. 머리 제스처 감지
+            detectGestures(processedData);
+            
+            // 6. 차트 그리기
+            drawCharts(processedData);
+        }
+        
+        function analyzeStability(data) {
+            const pitchStd = standardDeviation(data.map(d => d.eulerX));
+            const yawStd = standardDeviation(data.map(d => d.eulerY));
+            const rollStd = standardDeviation(data.map(d => d.eulerZ));
+            const overallStability = (pitchStd + yawStd + rollStd) / 3;
+            
+            document.getElementById('pitchStability').innerHTML = pitchStd.toFixed(2) + '<span class="metric-unit">°</span>';
+            document.getElementById('yawStability').innerHTML = yawStd.toFixed(2) + '<span class="metric-unit">°</span>';
+            document.getElementById('rollStability').innerHTML = rollStd.toFixed(2) + '<span class="metric-unit">°</span>';
+            document.getElementById('stabilityScore').textContent = overallStability.toFixed(2);
+            
+            const stabilityStatus = document.getElementById('stabilityStatus');
+            if (overallStability < 5) {
+                stabilityStatus.textContent = '매우 안정';
+                stabilityStatus.className = 'status good';
+            } else if (overallStability < 10) {
+                stabilityStatus.textContent = '안정';
+                stabilityStatus.className = 'status warning';
+            } else {
+                stabilityStatus.textContent = '불안정';
+                stabilityStatus.className = 'status danger';
+            }
+        }
+        
+        function analyzeLighting(data) {
+            const lights = data.map(d => d.ambientLight);
+            const avgLight = average(lights);
+            
+            document.getElementById('avgLight').innerHTML = avgLight.toFixed(1) + '<span class="metric-unit">lux</span>';
+            
+            const lightStatus = document.getElementById('lightStatus');
+            if (avgLight < 50) {
+                lightStatus.textContent = '매우 어두움';
+                lightStatus.className = 'status danger';
+            } else if (avgLight < 100) {
+                lightStatus.textContent = '어두움';
+                lightStatus.className = 'status warning';
+            } else if (avgLight < 300) {
+                lightStatus.textContent = '적절';
+                lightStatus.className = 'status good';
+            } else {
+                lightStatus.textContent = '밝음';
+                lightStatus.className = 'status warning';
+            }
+            
+            // 조도 차트
+            if (lightChart) lightChart.destroy();
+            const ctx = document.getElementById('lightChart').getContext('2d');
+            lightChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i + 1),
+                    datasets: [{
+                        label: '조도',
+                        data: lights,
+                        borderColor: '#ff9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Lux' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function analyzeOrientation(data) {
+            const deviations = data.map(d => 
+                Math.sqrt(d.eulerX * d.eulerX + d.eulerY * d.eulerY + d.eulerZ * d.eulerZ)
+            );
+            const avgDeviation = average(deviations);
+            const score = Math.max(0, 100 - (avgDeviation / 45) * 100);
+            
+            document.getElementById('orientationScore').innerHTML = score.toFixed(1) + '<span class="metric-unit">%</span>';
+            
+            const orientationStatus = document.getElementById('orientationStatus');
+            if (score > 80) {
+                orientationStatus.textContent = '정면 응시';
+                orientationStatus.className = 'status good';
+            } else if (score > 60) {
+                orientationStatus.textContent = '약간 기울어짐';
+                orientationStatus.className = 'status warning';
+            } else {
+                orientationStatus.textContent = '정면 미응시';
+                orientationStatus.className = 'status danger';
+            }
+            
+            // 얼굴 인디케이터 업데이트
+            const avgX = average(data.map(d => d.eulerX));
+            const avgY = average(data.map(d => d.eulerY));
+            const indicator = document.getElementById('faceIndicator');
+            indicator.style.transform = `rotateY(${avgY}deg) rotateX(${-avgX}deg)`;
+        }
+        
+        function detectSpoofing(data) {
+            const quatChanges = [];
+            for (let i = 1; i < data.length; i++) {
+                const change = Math.abs(data[i].corrX - data[i-1].corrX) +
+                               Math.abs(data[i].corrY - data[i-1].corrY) +
+                               Math.abs(data[i].corrZ - data[i-1].corrZ) +
+                               Math.abs(data[i].corrW - data[i-1].corrW);
+                quatChanges.push(change);
+            }
+            
+            const avgChange = average(quatChanges);
+            const spoofingResult = document.getElementById('spoofingResult');
+            
+            if (avgChange < 0.001) {
+                spoofingResult.textContent = '⚠️ 스푸핑 의심';
+                spoofingResult.style.color = '#f44336';
+            } else if (avgChange < 0.005) {
+                spoofingResult.textContent = '⚡ 추가 검증 필요';
+                spoofingResult.style.color = '#ff9800';
+            } else {
+                spoofingResult.textContent = '✅ 정상';
+                spoofingResult.style.color = '#4caf50';
+            }
+        }
+        
+        function detectGestures(data) {
+            const gestures = [];
+            const pitchDiffs = [];
+            const yawDiffs = [];
+            
+            for (let i = 1; i < data.length; i++) {
+                pitchDiffs.push(Math.abs(data[i].eulerX - data[i-1].eulerX));
+                yawDiffs.push(Math.abs(data[i].eulerY - data[i-1].eulerY));
+            }
+            
+            if (Math.max(...pitchDiffs) > 10) {
+                gestures.push('고개 끄덕임 감지');
+            }
+            if (Math.max(...yawDiffs) > 15) {
+                gestures.push('좌우 머리 흔들기 감지');
+            }
+            
+            const gestureList = document.getElementById('gestureList');
+            if (gestures.length > 0) {
+                gestureList.innerHTML = gestures.map(g => `<li>${g}</li>`).join('');
+            } else {
+                gestureList.innerHTML = '<li>특별한 제스처 없음</li>';
+            }
+        }
+        
+        function drawCharts(data) {
+            // 각도 변화 차트
+            if (angleChart) angleChart.destroy();
+            const angleCtx = document.getElementById('angleChart').getContext('2d');
+            angleChart = new Chart(angleCtx, {
+                type: 'line',
+                data: {
+                    labels: data.map((_, i) => i + 1),
+                    datasets: [
+                        {
+                            label: 'Pitch (상하)',
+                            data: data.map(d => d.eulerX),
+                            borderColor: '#f44336',
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Yaw (좌우)',
+                            data: data.map(d => d.eulerY),
+                            borderColor: '#2196f3',
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Roll (기울임)',
+                            data: data.map(d => d.eulerZ),
+                            borderColor: '#4caf50',
+                            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '시간에 따른 얼굴 각도 변화'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: '각도 (도)' }
+                        },
+                        x: {
+                            title: { display: true, text: '시간' }
+                        }
+                    }
+                }
+            });
+            
+            // 방향 분포 차트
+            if (distributionChart) distributionChart.destroy();
+            const distCtx = document.getElementById('distributionChart').getContext('2d');
+            distributionChart = new Chart(distCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: '얼굴 방향',
+                        data: data.map(d => ({ x: d.eulerY, y: d.eulerX })),
+                        backgroundColor: 'rgba(102, 126, 234, 0.6)',
+                        pointRadius: 8,
+                        pointHoverRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Yaw(좌우) vs Pitch(상하) 분포'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Yaw (좌우 회전)' },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: { display: true, text: 'Pitch (상하 회전)' },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 유틸리티 함수들
+        function average(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+        
+        function standardDeviation(arr) {
+            const avg = average(arr);
+            const squareDiffs = arr.map(value => Math.pow(value - avg, 2));
+            const avgSquareDiff = average(squareDiffs);
+            return Math.sqrt(avgSquareDiff);
+        }
+    </script>
+</body>
+</html>
