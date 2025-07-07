@@ -233,12 +233,16 @@
         </div>
         
         <div class="upload-section">
-            <h2>통합 CSV 파일 업로드</h2>
-            <p>Liveness History, Matching History, Sensor Data가 포함된 CSV 파일을 선택해주세요</p>
+            <h2>CSV 파일 업로드</h2>
+            <p>하나 또는 여러 개의 CSV 파일을 선택해주세요</p>
             <div class="file-input-wrapper">
-                <input type="file" id="csvFile" accept=".csv">
-                <div class="file-input-button">📁 파일 선택</div>
+                <input type="file" id="csvFile" accept=".csv" multiple>
+                <div class="file-input-button">📁 파일 선택 (여러 개 가능)</div>
             </div>
+            <div id="fileList" style="margin: 20px 0; text-align: left;"></div>
+            <button id="analyzeButton" style="display: none; background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 12px 30px; border: none; border-radius: 50px; font-size: 1em; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                📊 분석 시작
+            </button>
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>데이터 분석 중...</p>
@@ -354,73 +358,131 @@
             merged: []
         };
         
+        let selectedFiles = [];
+        let combinedData = {
+            liveness: [],
+            matching: [],
+            sensor: []
+        };
+        
+        // 파일 선택 이벤트
         document.getElementById('csvFile').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                document.getElementById('loading').classList.add('active');
-                parseIntegratedCSV(file);
-            }
+            selectedFiles = Array.from(e.target.files);
+            displayFileList();
         });
         
-        function parseIntegratedCSV(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                const lines = content.split('\n');
-                
-                // 테이블 섹션 찾기
-                let currentSection = null;
-                let sectionData = {
-                    liveness: [],
-                    matching: [],
-                    sensor: []
-                };
-                
-                lines.forEach(line => {
-                    if (line.includes('Table: Liveness History')) {
-                        currentSection = 'liveness';
-                    } else if (line.includes('Table: Matching History')) {
-                        currentSection = 'matching';
-                    } else if (line.includes('Table: Sensor Data')) {
-                        currentSection = 'sensor';
-                    } else if (currentSection && line.trim()) {
-                        sectionData[currentSection].push(line);
-                    }
-                });
-                
-                // 각 섹션 파싱
-                parseSection('liveness', sectionData.liveness);
-                parseSection('matching', sectionData.matching);
-                parseSection('sensor', sectionData.sensor);
-                
-                // 데이터 병합 및 분석
-                mergeAndAnalyze();
-                
-                document.getElementById('loading').classList.remove('active');
-                document.getElementById('analysisSummary').style.display = 'block';
-                document.getElementById('chartsSection').style.display = 'grid';
-            };
-            reader.readAsText(file);
-        }
-        
-        function parseSection(type, lines) {
-            if (lines.length < 2) return;
+        // 선택된 파일 목록 표시
+        function displayFileList() {
+            const fileListDiv = document.getElementById('fileList');
+            const analyzeButton = document.getElementById('analyzeButton');
             
-            const headers = parseCSVLine(lines[0]);
-            const data = [];
-            
-            for (let i = 1; i < lines.length; i++) {
-                const values = parseCSVLine(lines[i]);
-                if (values.length === headers.length) {
-                    const row = {};
-                    headers.forEach((header, index) => {
-                        row[header] = values[index];
-                    });
-                    data.push(row);
-                }
+            if (selectedFiles.length === 0) {
+                fileListDiv.innerHTML = '';
+                analyzeButton.style.display = 'none';
+                return;
             }
             
-            analysisData[type] = data;
+            let html = '<h3>선택된 파일:</h3><ul style="list-style: none; padding: 0;">';
+            selectedFiles.forEach((file, index) => {
+                html += `<li style="padding: 5px; background: #f0f0f0; margin: 5px 0; border-radius: 5px;">
+                    📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)
+                    <button onclick="removeFile(${index})" style="float: right; background: #f44336; color: white; border: none; padding: 2px 10px; border-radius: 3px; cursor: pointer;">✕</button>
+                </li>`;
+            });
+            html += '</ul>';
+            
+            fileListDiv.innerHTML = html;
+            analyzeButton.style.display = 'inline-block';
+        }
+        
+        // 파일 제거
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displayFileList();
+        }
+        
+        // 분석 시작 버튼
+        document.getElementById('analyzeButton').addEventListener('click', function() {
+            if (selectedFiles.length === 0) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+            
+            document.getElementById('loading').classList.add('active');
+            combinedData = { liveness: [], matching: [], sensor: [] };
+            
+            let processedCount = 0;
+            
+            // 각 파일을 순차적으로 처리
+            selectedFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    parseIntegratedCSV(e.target.result, file.name);
+                    processedCount++;
+                    
+                    // 모든 파일 처리 완료
+                    if (processedCount === selectedFiles.length) {
+                        finalizeAnalysis();
+                    }
+                };
+                reader.readAsText(file);
+            });
+        });
+        
+        function parseIntegratedCSV(content, fileName) {
+            const lines = content.split('\n');
+            
+            // 현재 파일의 데이터
+            let currentFileData = {
+                liveness: [],
+                matching: [],
+                sensor: [],
+                fileName: fileName
+            };
+            
+            // 테이블 섹션 찾기
+            let currentSection = null;
+            let sectionData = {
+                liveness: [],
+                matching: [],
+                sensor: []
+            };
+            
+            lines.forEach(line => {
+                if (line.includes('Table: Liveness History')) {
+                    currentSection = 'liveness';
+                } else if (line.includes('Table: Matching History')) {
+                    currentSection = 'matching';
+                } else if (line.includes('Table: Sensor Data')) {
+                    currentSection = 'sensor';
+                } else if (currentSection && line.trim() && !line.includes('Table:')) {
+                    sectionData[currentSection].push(line);
+                }
+            });
+            
+            // 각 섹션 파싱
+            Object.keys(sectionData).forEach(type => {
+                if (sectionData[type].length > 1) {
+                    const headers = parseCSVLine(sectionData[type][0]);
+                    
+                    for (let i = 1; i < sectionData[type].length; i++) {
+                        const values = parseCSVLine(sectionData[type][i]);
+                        if (values.length === headers.length) {
+                            const row = { _sourceFile: fileName };
+                            headers.forEach((header, index) => {
+                                row[header] = values[index];
+                            });
+                            currentFileData[type].push(row);
+                            combinedData[type].push(row);
+                        }
+                    }
+                }
+            });
+            
+            console.log(`파일 처리 완료: ${fileName}`);
+            console.log(`- Liveness: ${currentFileData.liveness.length}건`);
+            console.log(`- Matching: ${currentFileData.matching.length}건`);
+            console.log(`- Sensor: ${currentFileData.sensor.length}건`);
         }
         
         function parseCSVLine(line) {
@@ -444,6 +506,64 @@
             return values.map(v => v.replace(/^"|"$/g, ''));
         }
         
+        function finalizeAnalysis() {
+            console.log('\n=== 전체 데이터 통합 완료 ===');
+            console.log(`총 Liveness 데이터: ${combinedData.liveness.length}건`);
+            console.log(`총 Matching 데이터: ${combinedData.matching.length}건`);
+            console.log(`총 Sensor 데이터: ${combinedData.sensor.length}건`);
+            
+            // analysisData에 통합 데이터 할당
+            analysisData.liveness = combinedData.liveness;
+            analysisData.matching = combinedData.matching;
+            analysisData.sensor = combinedData.sensor;
+            
+            // 데이터 병합 및 분석
+            mergeAndAnalyze();
+            
+            // 파일별 통계 추가
+            displayFileStatistics();
+            
+            document.getElementById('loading').classList.remove('active');
+            document.getElementById('analysisSummary').style.display = 'block';
+            document.getElementById('chartsSection').style.display = 'grid';
+        }
+        
+        function displayFileStatistics() {
+            // 파일별 통계 계산
+            const fileStats = {};
+            
+            selectedFiles.forEach(file => {
+                const fileName = file.name;
+                fileStats[fileName] = {
+                    liveness: combinedData.liveness.filter(d => d._sourceFile === fileName).length,
+                    matching: combinedData.matching.filter(d => d._sourceFile === fileName).length,
+                    sensor: combinedData.sensor.filter(d => d._sourceFile === fileName).length
+                };
+            });
+            
+            // 통계 표시를 위한 HTML 추가
+            const summaryDiv = document.getElementById('analysisSummary');
+            let statsHTML = '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0;">';
+            statsHTML += '<h3>📁 파일별 데이터 통계</h3>';
+            statsHTML += '<table style="width: 100%; border-collapse: collapse;">';
+            statsHTML += '<tr style="background: #e3f2fd;"><th style="padding: 10px; text-align: left;">파일명</th><th style="padding: 10px;">Liveness</th><th style="padding: 10px;">Matching</th><th style="padding: 10px;">Sensor</th></tr>';
+            
+            Object.entries(fileStats).forEach(([fileName, stats]) => {
+                statsHTML += `<tr style="border-bottom: 1px solid #e0e0e0;">
+                    <td style="padding: 10px;">${fileName}</td>
+                    <td style="padding: 10px; text-align: center;">${stats.liveness}</td>
+                    <td style="padding: 10px; text-align: center;">${stats.matching}</td>
+                    <td style="padding: 10px; text-align: center;">${stats.sensor}</td>
+                </tr>`;
+            });
+            
+            statsHTML += '</table></div>';
+            
+            // 기존 통계 다음에 추가
+            const existingStats = summaryDiv.querySelector('.stats-grid');
+            existingStats.insertAdjacentHTML('afterend', statsHTML);
+        }
+        
         function mergeAndAnalyze() {
             // ID로 데이터 병합
             const mergedData = {};
@@ -451,38 +571,55 @@
             // Liveness 데이터 처리
             analysisData.liveness.forEach(row => {
                 const id = row.ID;
-                if (!mergedData[id]) mergedData[id] = {};
+                if (!mergedData[id]) mergedData[id] = { _sourceFiles: [] };
+                
+                // 어느 파일에서 왔는지 기록
+                if (row._sourceFile && !mergedData[id]._sourceFiles.includes(row._sourceFile)) {
+                    mergedData[id]._sourceFiles.push(row._sourceFile);
+                }
+                
                 mergedData[id].liveness = {
-                    result: parseInt(row.Result) === 1 ? 1 : 0,  // -6 같은 값도 0으로 처리
-                    score: parseFloat(row.Score)
+                    result: parseInt(row.Result) === 1 ? 1 : 0,
+                    score: parseFloat(row.Score),
+                    sourceFile: row._sourceFile
                 };
             });
             
             // Matching 데이터 처리
             analysisData.matching.forEach(row => {
                 const id = row.ID;
-                if (!mergedData[id]) mergedData[id] = {};
-                // Result 값 변환: 1=성공, 2,3=실패
+                if (!mergedData[id]) mergedData[id] = { _sourceFiles: [] };
+                
+                if (row._sourceFile && !mergedData[id]._sourceFiles.includes(row._sourceFile)) {
+                    mergedData[id]._sourceFiles.push(row._sourceFile);
+                }
+                
                 const result = parseInt(row.Result);
                 mergedData[id].matching = {
                     result: result === 1 ? 1 : 0,
                     score: parseFloat(row.Score),
                     threshold: parseFloat(row['Threshold Score']),
-                    message: row.Message
+                    message: row.Message,
+                    sourceFile: row._sourceFile
                 };
             });
             
             // Sensor 데이터 처리
             analysisData.sensor.forEach(row => {
                 const id = row.ID;
-                if (!mergedData[id]) mergedData[id] = {};
+                if (!mergedData[id]) mergedData[id] = { _sourceFiles: [] };
+                
+                if (row._sourceFile && !mergedData[id]._sourceFiles.includes(row._sourceFile)) {
+                    mergedData[id]._sourceFiles.push(row._sourceFile);
+                }
                 
                 const eulerAngles = row['Euler Angles (X,Y,Z)'].split(',').map(v => parseFloat(v));
                 mergedData[id].sensor = {
                     eulerX: eulerAngles[0],
                     eulerY: eulerAngles[1],
                     eulerZ: eulerAngles[2],
-                    ambientLight: parseFloat(row['Ambient Light'])
+                    ambientLight: parseFloat(row['Ambient Light']),
+                    sourceFile: row._sourceFile
                 };
             });
             
@@ -491,6 +628,8 @@
                 id,
                 ...data
             }));
+            
+            console.log(`병합된 고유 ID 수: ${analysisData.merged.length}`);
             
             // 통계 계산 및 표시
             calculateStatistics();
