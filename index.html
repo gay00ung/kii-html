@@ -229,7 +229,7 @@
     <div class="container">
         <div class="header">
             <h1>🎯 얼굴인식 통합 분석 대시보드</h1>
-            <p>Liveness, Matching, Sensor 데이터를 통합 분석합니다</p>
+            <p>Liveness, Matching, Sensor, Process Time 데이터를 통합 분석합니다</p>
         </div>
         
         <div class="upload-section">
@@ -278,6 +278,21 @@
                     <div class="stat-value" id="completeRate">-%</div>
                     <div class="stat-detail">Liveness & Matching 모두 성공</div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-label">평균 전체 처리 시간</div>
+                    <div class="stat-value" id="avgTotalTime">-</div>
+                    <div class="stat-detail">모든 프로세스 합계</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">가장 빠른 프로세스</div>
+                    <div class="stat-value" id="fastestProcess">-</div>
+                    <div class="stat-detail" id="fastestProcessTime">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">가장 느린 프로세스</div>
+                    <div class="stat-value" id="slowestProcess">-</div>
+                    <div class="stat-detail" id="slowestProcessTime">-</div>
+                </div>
             </div>
             
             <!-- 최적 조건 분석 -->
@@ -286,28 +301,28 @@
                 <table>
                     <tr>
                         <th>조건</th>
-                        <th>권장 범위</th>
-                        <th>현재 상태</th>
+                        <th>최적 범위 (성공 케이스 기준)</th>
+                        <th>전체 데이터 분포</th>
                     </tr>
                     <tr>
                         <td>조도</td>
                         <td id="optimalLight">-</td>
-                        <td id="currentLight">-</td>
+                        <td id="overallLight">-</td>
                     </tr>
                     <tr>
                         <td>Pitch (상하)</td>
                         <td id="optimalPitch">-</td>
-                        <td id="currentPitch">-</td>
+                        <td id="overallPitch">-</td>
                     </tr>
                     <tr>
                         <td>Yaw (좌우)</td>
                         <td id="optimalYaw">-</td>
-                        <td id="currentYaw">-</td>
+                        <td id="overallYaw">-</td>
                     </tr>
                     <tr>
                         <td>Roll (기울임)</td>
                         <td id="optimalRoll">-</td>
-                        <td id="currentRoll">-</td>
+                        <td id="overallRoll">-</td>
                     </tr>
                 </table>
             </div>
@@ -342,6 +357,27 @@
                     <canvas id="correlationChart"></canvas>
                 </div>
             </div>
+            
+            <div class="chart-card full-width-card">
+                <h2>⏱️ 프로세스별 처리 시간 분석</h2>
+                <div class="chart-container">
+                    <canvas id="processTimeChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2>📊 성공/실패별 프로세스 시간</h2>
+                <div class="chart-container">
+                    <canvas id="processTimeByResultChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <h2>⏰ 프로세스 시간 분포</h2>
+                <div class="chart-container">
+                    <canvas id="processTimeDistributionChart"></canvas>
+                </div>
+            </div>
         </div>
         
         <!-- 기존 센서 분석 대시보드 -->
@@ -355,6 +391,7 @@
             liveness: [],
             matching: [],
             sensor: [],
+            processTime: [],
             merged: []
         };
         
@@ -362,7 +399,8 @@
         let combinedData = {
             liveness: [],
             matching: [],
-            sensor: []
+            sensor: [],
+            processTime: []
         };
         
         // 파일 선택 이벤트
@@ -409,7 +447,7 @@
             }
             
             document.getElementById('loading').classList.add('active');
-            combinedData = { liveness: [], matching: [], sensor: [] };
+            combinedData = { liveness: [], matching: [], sensor: [], processTime: [] };
             
             let processedCount = 0;
             
@@ -437,6 +475,7 @@
                 liveness: [],
                 matching: [],
                 sensor: [],
+                processTime: [],
                 fileName: fileName
             };
             
@@ -445,7 +484,8 @@
             let sectionData = {
                 liveness: [],
                 matching: [],
-                sensor: []
+                sensor: [],
+                processTime: []
             };
             
             lines.forEach(line => {
@@ -455,6 +495,8 @@
                     currentSection = 'matching';
                 } else if (line.includes('Table: Sensor Data')) {
                     currentSection = 'sensor';
+                } else if (line.includes('Table: Process Time Logs')) {
+                    currentSection = 'processTime';
                 } else if (currentSection && line.trim() && !line.includes('Table:')) {
                     sectionData[currentSection].push(line);
                 }
@@ -483,6 +525,7 @@
             console.log(`- Liveness: ${currentFileData.liveness.length}건`);
             console.log(`- Matching: ${currentFileData.matching.length}건`);
             console.log(`- Sensor: ${currentFileData.sensor.length}건`);
+            console.log(`- Process Time: ${currentFileData.processTime.length}건`);
         }
         
         function parseCSVLine(line) {
@@ -511,11 +554,13 @@
             console.log(`총 Liveness 데이터: ${combinedData.liveness.length}건`);
             console.log(`총 Matching 데이터: ${combinedData.matching.length}건`);
             console.log(`총 Sensor 데이터: ${combinedData.sensor.length}건`);
+            console.log(`총 Process Time 데이터: ${combinedData.processTime.length}건`);
             
             // analysisData에 통합 데이터 할당
             analysisData.liveness = combinedData.liveness;
             analysisData.matching = combinedData.matching;
             analysisData.sensor = combinedData.sensor;
+            analysisData.processTime = combinedData.processTime;
             
             // 데이터 병합 및 분석
             mergeAndAnalyze();
@@ -537,7 +582,8 @@
                 fileStats[fileName] = {
                     liveness: combinedData.liveness.filter(d => d._sourceFile === fileName).length,
                     matching: combinedData.matching.filter(d => d._sourceFile === fileName).length,
-                    sensor: combinedData.sensor.filter(d => d._sourceFile === fileName).length
+                    sensor: combinedData.sensor.filter(d => d._sourceFile === fileName).length,
+                    processTime: combinedData.processTime.filter(d => d._sourceFile === fileName).length
                 };
             });
             
@@ -546,7 +592,7 @@
             let statsHTML = '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 20px 0;">';
             statsHTML += '<h3>📁 파일별 데이터 통계</h3>';
             statsHTML += '<table style="width: 100%; border-collapse: collapse;">';
-            statsHTML += '<tr style="background: #e3f2fd;"><th style="padding: 10px; text-align: left;">파일명</th><th style="padding: 10px;">Liveness</th><th style="padding: 10px;">Matching</th><th style="padding: 10px;">Sensor</th></tr>';
+            statsHTML += '<tr style="background: #e3f2fd;"><th style="padding: 10px; text-align: left;">파일명</th><th style="padding: 10px;">Liveness</th><th style="padding: 10px;">Matching</th><th style="padding: 10px;">Sensor</th><th style="padding: 10px;">Process Time</th></tr>';
             
             Object.entries(fileStats).forEach(([fileName, stats]) => {
                 statsHTML += `<tr style="border-bottom: 1px solid #e0e0e0;">
@@ -554,6 +600,7 @@
                     <td style="padding: 10px; text-align: center;">${stats.liveness}</td>
                     <td style="padding: 10px; text-align: center;">${stats.matching}</td>
                     <td style="padding: 10px; text-align: center;">${stats.sensor}</td>
+                    <td style="padding: 10px; text-align: center;">${stats.processTime}</td>
                 </tr>`;
             });
             
@@ -579,8 +626,9 @@
                 }
                 
                 mergedData[id].liveness = {
-                    result: parseInt(row.Result) === 1 ? 1 : 0,
+                    result: parseInt(row.Result) === 1 ? 1 : 0,  // 1이 아닌 모든 값은 실패로 처리
                     score: parseFloat(row.Score),
+                    rawResult: parseInt(row.Result),  // 원본 결과값 저장
                     sourceFile: row._sourceFile
                 };
             });
@@ -621,6 +669,30 @@
                     ambientLight: parseFloat(row['Ambient Light']),
                     sourceFile: row._sourceFile
                 };
+            });
+            
+            // Process Time 데이터 처리
+            analysisData.processTime.forEach(row => {
+                const txId = row['Transaction ID'];
+                if (!mergedData[txId]) mergedData[txId] = { _sourceFiles: [] };
+                
+                if (row._sourceFile && !mergedData[txId]._sourceFiles.includes(row._sourceFile)) {
+                    mergedData[txId]._sourceFiles.push(row._sourceFile);
+                }
+                
+                if (!mergedData[txId].processes) mergedData[txId].processes = {};
+                
+                const processName = row['Process Name'];
+                mergedData[txId].processes[processName] = {
+                    startTime: row['Start Time'],
+                    endTime: row['End Time'],
+                    duration: parseInt(row['Duration (ms)']) || 0,
+                    sourceFile: row._sourceFile
+                };
+                
+                // Transaction별 전체 처리 시간 계산
+                if (!mergedData[txId].totalProcessTime) mergedData[txId].totalProcessTime = 0;
+                mergedData[txId].totalProcessTime += parseInt(row['Duration (ms)']) || 0;
             });
             
             // 배열로 변환
@@ -668,6 +740,9 @@
             
             // 최적 조건 계산
             calculateOptimalConditions();
+            
+            // 프로세스 시간 통계 계산
+            calculateProcessTimeStatistics();
         }
         
         function calculateOptimalConditions() {
@@ -678,14 +753,17 @@
                 d.sensor
             );
             
+            // 전체 센서 데이터가 있는 케이스
+            const allCasesWithSensor = analysisData.merged.filter(d => d.sensor);
+            
             if (successCases.length > 0) {
-                // 조도 범위
+                // 성공 케이스의 조도 범위
                 const lights = successCases.map(d => d.sensor.ambientLight).sort((a, b) => a - b);
                 const lightQ1 = lights[Math.floor(lights.length * 0.25)];
                 const lightQ3 = lights[Math.floor(lights.length * 0.75)];
                 document.getElementById('optimalLight').textContent = `${lightQ1.toFixed(0)} ~ ${lightQ3.toFixed(0)} lux`;
                 
-                // 각도 범위
+                // 성공 케이스의 각도 범위
                 const pitches = successCases.map(d => Math.abs(d.sensor.eulerX)).sort((a, b) => a - b);
                 const yaws = successCases.map(d => Math.abs(d.sensor.eulerY)).sort((a, b) => a - b);
                 const rolls = successCases.map(d => Math.abs(d.sensor.eulerZ)).sort((a, b) => a - b);
@@ -694,6 +772,162 @@
                 document.getElementById('optimalYaw').textContent = `±${yaws[Math.floor(yaws.length * 0.75)].toFixed(1)}°`;
                 document.getElementById('optimalRoll').textContent = `±${rolls[Math.floor(rolls.length * 0.75)].toFixed(1)}°`;
             }
+            
+            if (allCasesWithSensor.length > 0) {
+                // 전체 데이터의 조도 분포
+                const allLights = allCasesWithSensor.map(d => d.sensor.ambientLight);
+                const avgLight = allLights.reduce((a, b) => a + b, 0) / allLights.length;
+                const minLight = Math.min(...allLights);
+                const maxLight = Math.max(...allLights);
+                document.getElementById('overallLight').textContent = `평균 ${avgLight.toFixed(0)} lux (${minLight.toFixed(0)}~${maxLight.toFixed(0)})`;
+                
+                // 전체 데이터의 각도 분포
+                const allPitches = allCasesWithSensor.map(d => Math.abs(d.sensor.eulerX));
+                const allYaws = allCasesWithSensor.map(d => Math.abs(d.sensor.eulerY));
+                const allRolls = allCasesWithSensor.map(d => Math.abs(d.sensor.eulerZ));
+                
+                const avgPitch = allPitches.reduce((a, b) => a + b, 0) / allPitches.length;
+                const avgYaw = allYaws.reduce((a, b) => a + b, 0) / allYaws.length;
+                const avgRoll = allRolls.reduce((a, b) => a + b, 0) / allRolls.length;
+                
+                document.getElementById('overallPitch').textContent = `평균 ±${avgPitch.toFixed(1)}° (최대 ±${Math.max(...allPitches).toFixed(1)}°)`;
+                document.getElementById('overallYaw').textContent = `평균 ±${avgYaw.toFixed(1)}° (최대 ±${Math.max(...allYaws).toFixed(1)}°)`;
+                document.getElementById('overallRoll').textContent = `평균 ±${avgRoll.toFixed(1)}° (최대 ±${Math.max(...allRolls).toFixed(1)}°)`;
+            }
+        }
+        
+        function calculateProcessTimeStatistics() {
+            // 프로세스별 통계
+            const processStats = {};
+            let totalDuration = 0;
+            let transactionCount = 0;
+            
+            // 디버깅용 카운터
+            let debugStats = {
+                totalTransactions: 0,
+                livenessSuccess: 0,
+                livenessFail: 0,
+                matchingSuccess: 0,
+                matchingFail: 0,
+                completeSuccess: 0,
+                completeFail: 0
+            };
+            
+            analysisData.merged.forEach(d => {
+                if (d.processes) {
+                    debugStats.totalTransactions++;
+                    let txTotalTime = 0;
+                    
+                    // 이 트랜잭션의 성공/실패 판단
+                    // Liveness가 성공(1)이고, Matching도 성공(1)인 경우만 완전 성공
+                    // Liveness 실패시 Matching이 없으므로, Matching이 없는 경우는 실패로 처리
+                    const livenessSuccess = d.liveness && d.liveness.result === 1;
+                    const matchingSuccess = d.matching && d.matching.result === 1;
+                    const isSuccess = livenessSuccess && matchingSuccess;
+                    
+                    // 디버깅 통계
+                    if (d.liveness) {
+                        if (livenessSuccess) debugStats.livenessSuccess++;
+                        else debugStats.livenessFail++;
+                    }
+                    if (d.matching) {
+                        if (d.matching.result === 1) debugStats.matchingSuccess++;
+                        else debugStats.matchingFail++;
+                    }
+                    if (isSuccess) debugStats.completeSuccess++;
+                    else debugStats.completeFail++;
+                    
+                    Object.entries(d.processes).forEach(([processName, processData]) => {
+                        if (!processStats[processName]) {
+                            processStats[processName] = {
+                                durations: [],
+                                successDurations: [],
+                                failDurations: []
+                            };
+                        }
+                        
+                        processStats[processName].durations.push(processData.duration);
+                        
+                        if (isSuccess) {
+                            processStats[processName].successDurations.push(processData.duration);
+                        } else {
+                            processStats[processName].failDurations.push(processData.duration);
+                        }
+                        
+                        txTotalTime += processData.duration;
+                    });
+                    
+                    if (txTotalTime > 0) {
+                        totalDuration += txTotalTime;
+                        transactionCount++;
+                    }
+                }
+            });
+            
+            // 디버깅 정보 출력
+            console.log('=== Process Time 분석 디버깅 정보 ===');
+            console.log('전체 트랜잭션:', debugStats.totalTransactions);
+            console.log('Liveness 성공:', debugStats.livenessSuccess, '실패:', debugStats.livenessFail);
+            console.log('Matching 성공:', debugStats.matchingSuccess, '실패:', debugStats.matchingFail);
+            console.log('완전 성공:', debugStats.completeSuccess, '완전 실패:', debugStats.completeFail);
+            
+            // 프로세스별 성공/실패 건수 출력
+            console.log('\n프로세스별 성공/실패 건수:');
+            Object.entries(processStats).forEach(([processName, stats]) => {
+                console.log(`${processName}: 성공 ${stats.successDurations.length}건, 실패 ${stats.failDurations.length}건`);
+            });
+            
+            // 샘플 트랜잭션 상세 정보 (디버깅용)
+            console.log('\n샘플 트랜잭션 상세 (처음 5개):');
+            analysisData.merged.slice(0, 5).forEach(d => {
+                if (d.processes) {
+                    console.log(`ID: ${d.id}`);
+                    console.log(`  - Liveness: ${d.liveness ? `Result=${d.liveness.rawResult || d.liveness.result}` : 'N/A'}`);
+                    console.log(`  - Matching: ${d.matching ? `Result=${d.matching.result}` : 'N/A (Liveness 실패로 진행 안됨)'}`);
+                    console.log(`  - 판정: ${(d.liveness && d.liveness.result === 1 && d.matching && d.matching.result === 1) ? '성공' : '실패'}`);
+                }
+            });
+            
+            // 평균 전체 처리 시간
+            if (transactionCount > 0) {
+                const avgTotal = totalDuration / transactionCount;
+                document.getElementById('avgTotalTime').textContent = `${(avgTotal / 1000).toFixed(1)}초`;
+            }
+            
+            // 가장 빠른/느린 프로세스 찾기
+            let fastestProcess = '';
+            let fastestTime = Infinity;
+            let slowestProcess = '';
+            let slowestTime = 0;
+            
+            Object.entries(processStats).forEach(([processName, stats]) => {
+                if (stats.durations.length > 0) {
+                    const avgTime = stats.durations.reduce((a, b) => a + b, 0) / stats.durations.length;
+                    
+                    if (avgTime < fastestTime) {
+                        fastestTime = avgTime;
+                        fastestProcess = processName;
+                    }
+                    
+                    if (avgTime > slowestTime) {
+                        slowestTime = avgTime;
+                        slowestProcess = processName;
+                    }
+                }
+            });
+            
+            if (fastestProcess) {
+                document.getElementById('fastestProcess').textContent = fastestProcess.replace('_', ' ').toUpperCase();
+                document.getElementById('fastestProcessTime').textContent = `평균 ${fastestTime.toFixed(0)}ms`;
+            }
+            
+            if (slowestProcess) {
+                document.getElementById('slowestProcess').textContent = slowestProcess.replace('_', ' ').toUpperCase();
+                document.getElementById('slowestProcessTime').textContent = `평균 ${slowestTime.toFixed(0)}ms`;
+            }
+            
+            // 통계 데이터 저장 (차트용)
+            window.processStats = processStats;
         }
         
         function drawCharts() {
@@ -708,6 +942,9 @@
             
             // 4. 상관관계 히트맵
             drawCorrelationChart();
+            
+            // 5. 프로세스 시간 분석 차트들
+            drawProcessTimeCharts();
         }
         
         function drawLightSuccessChart() {
@@ -935,6 +1172,201 @@
                     }
                 });
             }
+        }
+        
+        function drawProcessTimeCharts() {
+            // 1. 프로세스별 평균 시간 차트
+            drawProcessTimeChart();
+            
+            // 2. 성공/실패별 프로세스 시간 비교
+            drawProcessTimeByResultChart();
+            
+            // 3. 프로세스 시간 분포
+            drawProcessTimeDistributionChart();
+        }
+        
+        function drawProcessTimeChart() {
+            const processStats = window.processStats || {};
+            const processNames = Object.keys(processStats);
+            const avgDurations = processNames.map(name => {
+                const durations = processStats[name].durations;
+                return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+            });
+            
+            const ctx = document.getElementById('processTimeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: processNames.map(name => name.replace('_', ' ').toUpperCase()),
+                    datasets: [{
+                        label: '평균 처리 시간 (ms)',
+                        data: avgDurations,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '시간 (ms)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    return `${context.dataset.label}: ${value.toFixed(0)}ms (${(value/1000).toFixed(1)}초)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function drawProcessTimeByResultChart() {
+            const processStats = window.processStats || {};
+            const processNames = Object.keys(processStats);
+            
+            const successData = processNames.map(name => {
+                const durations = processStats[name].successDurations;
+                return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+            });
+            
+            const failData = processNames.map(name => {
+                const durations = processStats[name].failDurations;
+                return durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0;
+            });
+            
+            const ctx = document.getElementById('processTimeByResultChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: processNames.map(name => name.replace('_', ' ').toUpperCase()),
+                    datasets: [
+                        {
+                            label: '성공 케이스',
+                            data: successData,
+                            backgroundColor: 'rgba(76, 175, 80, 0.7)',
+                            borderColor: '#4caf50',
+                            borderWidth: 2
+                        },
+                        {
+                            label: '실패 케이스',
+                            data: failData,
+                            backgroundColor: 'rgba(244, 67, 54, 0.7)',
+                            borderColor: '#f44336',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '평균 시간 (ms)' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed.y;
+                                    const processName = processNames[context.dataIndex];
+                                    const stats = processStats[processName];
+                                    const count = context.dataset.label === '성공 케이스' ? 
+                                        stats.successDurations.length : stats.failDurations.length;
+                                    return `${context.dataset.label}: ${value.toFixed(0)}ms (${count}건)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function drawProcessTimeDistributionChart() {
+            const processStats = window.processStats || {};
+            const datasets = [];
+            const colors = [
+                { bg: 'rgba(255, 99, 132, 0.2)', border: 'rgba(255, 99, 132, 1)' },
+                { bg: 'rgba(54, 162, 235, 0.2)', border: 'rgba(54, 162, 235, 1)' },
+                { bg: 'rgba(255, 206, 86, 0.2)', border: 'rgba(255, 206, 86, 1)' },
+                { bg: 'rgba(75, 192, 192, 0.2)', border: 'rgba(75, 192, 192, 1)' }
+            ];
+            
+            Object.entries(processStats).forEach(([processName, stats], index) => {
+                if (stats.durations.length > 0) {
+                    // 시간 구간별로 분류
+                    const bins = [0, 500, 1000, 2000, 3000, 5000, 10000];
+                    const binCounts = new Array(bins.length - 1).fill(0);
+                    
+                    stats.durations.forEach(duration => {
+                        for (let i = 0; i < bins.length - 1; i++) {
+                            if (duration >= bins[i] && duration < bins[i + 1]) {
+                                binCounts[i]++;
+                                break;
+                            } else if (duration >= bins[bins.length - 1]) {
+                                binCounts[binCounts.length - 1]++;
+                                break;
+                            }
+                        }
+                    });
+                    
+                    datasets.push({
+                        label: processName.replace('_', ' ').toUpperCase(),
+                        data: binCounts,
+                        backgroundColor: colors[index % colors.length].bg,
+                        borderColor: colors[index % colors.length].border,
+                        borderWidth: 2
+                    });
+                }
+            });
+            
+            const ctx = document.getElementById('processTimeDistributionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0-0.5초', '0.5-1초', '1-2초', '2-3초', '3-5초', '5초 이상'],
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: '건수' }
+                        },
+                        x: {
+                            title: { display: true, text: '처리 시간 구간' }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
