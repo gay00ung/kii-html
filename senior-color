@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시니어용 모바일 앱 UI/UX 디자인 가이드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            color: #7f8c8d;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .grid-full {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #ecf0f1;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+        }
+        
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .spec-item {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+        }
+        
+        .spec-item strong {
+            color: #2c3e50;
+        }
+        
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .color-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .do-dont {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .do, .dont {
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .do {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+        }
+        
+        .dont {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .checklist {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .checklist ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #bbdefb;
+        }
+        
+        .checklist li:before {
+            content: "✓";
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .warning:before {
+            content: "⚠️";
+            margin-right: 8px;
+        }
+        
+        .size-demo {
+            font-family: sans-serif;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .size-13 { font-size: 13pt; }
+        .size-16 { font-size: 16pt; }
+        .size-19 { font-size: 19pt; }
+        .size-24 { font-size: 24pt; }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .grid-full {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .do-dont {
+                grid-template-columns: 1fr;
+            }
+            
+            .color-palette {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 시니어용 모바일 앱 UI/UX 디자인 가이드</h1>
+            <p>50세 이상 사용자를 위한 앱 개발 필수 가이드라인</p>
+        </div>
+
+        <div class="grid-full">
+            <!-- 색상 가이드 - 전체 폭 -->
+            <div class="card">
+                <h2>🎨 색상 가이드</h2>
+                
+                <div class="highlight">
+                    <strong>핵심 원칙:</strong> 높은 명도 대비와 단순한 색상 조합
+                </div>
+                
+                <div class="spec-item">
+                    <strong>명도 대비 비율:</strong><br>
+                    • 일반 텍스트: 4.5:1 이상<br>
+                    • 큰 텍스트(18pt+): 3:1 이상
+                </div>
+
+                <!-- 커스텀 색상 팔레트 섹션 -->
+                <div class="spec-item">
+                    <strong>🎯 시니어 친화적 색상 팔레트</strong><br>
+                    <em>접근성과 가독성을 최우선으로 고려한 우리만의 색상 체계</em>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
+                    <div class="highlight">
+                        <strong>브랜드 색상 - 신뢰감과 안정감을 주는 블루 계열</strong><br>
+                        시니어층에게 친숙한 파란색 계열로 선택. 의료, 금융 분야에서 널리 사용되어 신뢰감을 주며, 색맹에도 구분하기 쉬운 색상입니다.
+                        <div class="color-palette">
+                            <div class="color-box" style="background: #007AFF; color: #fff;">메인<br>#007AFF</div>
+                            <div class="color-box" style="background: #0A2540; color: #fff;">텍스트<br>#0A2540</div>
+                            <div class="color-box" style="background: #E6E8EB; color: #0A2540;">강조배경<br>#E6E8EB</div>
+                        </div>
+                    </div>
+
+                    <div class="highlight">
+                        <strong>중립 색상 - 눈의 피로를 줄이는 그레이 스케일</strong><br>
+                        순수한 검정(#000) 대신 부드러운 다크 그레이를 사용하여 눈의 피로를 줄이고, 충분한 단계별 명도 차이로 정보 위계를 명확히 구분합니다.
+                        <div class="color-palette">
+                            <div class="color-box" style="background: #172B4D; color: #fff;">제목<br>#172B4D</div>
+                            <div class="color-box" style="background: #42526E; color: #fff;">본문<br>#42526E</div>
+                            <div class="color-box" style="background: #6B778C; color: #fff;">보조<br>#6B778C</div>
+                            <div class="color-box" style="background: #F4F5F7; color: #172B4D;">배경<br>#F4F5F7</div>
+                            <div class="color-box" style="background: #FFFFFF; color: #172B4D; border: 1px solid #ddd;">기본<br>#FFFFFF</div>
+                        </div>
+                    </div>
+
+                    <div class="highlight">
+                        <strong>시맨틱 색상 - 직관적 인식을 위한 의미 색상</strong><br>
+                        전 세계적으로 통용되는 색상 의미를 활용하여 언어나 문화적 차이 없이 직관적으로 인식할 수 있도록 설계했습니다.
+                        <div class="color-palette">
+                            <div class="color-box" style="background: #36B37E; color: #fff;">성공<br>#36B37E</div>
+                            <div class="color-box" style="background: #DE350B; color: #fff;">오류<br>#DE350B</div>
+                            <div class="color-box" style="background: #FFAB00; color: #0A2540;">경고<br>#FFAB00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checklist">
+                    <h4>🔍 색상 선택 근거</h4>
+                    <ul>
+                        <li><strong>고대비 보장:</strong> 모든 색상 조합이 WCAG AA 기준(4.5:1) 이상 달성</li>
+                        <li><strong>색맹 고려:</strong> 적녹색맹도 구분 가능한 블루-그레이 중심 팔레트</li>
+                        <li><strong>시인성 최적화:</strong> 나이에 따른 시력 저하를 고려한 충분한 명도 차이</li>
+                        <li><strong>심리적 안정감:</strong> 차분하고 신뢰감 있는 색상으로 구성</li>
+                        <li><strong>디지털 친화성:</strong> 화면에서 눈의 피로를 최소화하는 색온도</li>
+                    </ul>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: start;">
+                    <div class="spec-item">
+                        <strong>일반적인 권장 색상 조합:</strong>
+                        <div class="color-palette">
+                            <div class="color-box" style="background: #000; color: #fff;">흰/검</div>
+                            <div class="color-box" style="background: #0066cc; color: #ffff00;">파/노</div>
+                            <div class="color-box" style="background: #228B22; color: #fff;">흰/녹</div>
+                        </div>
+                    </div>
+                    
+                    <div class="warning">
+                        <strong>주의사항:</strong> 황록색+적갈색, 황색+청색 조합 피하기. 우리 팔레트는 이런 문제가 없도록 신중하게 선별되었습니다.
+                    </div>
+                </div>
+                
+                <div class="do-dont">
+                    <div class="do">
+                        <strong>✓ 해야 할 것</strong><br>
+                        • 색상+패턴/굵기로 정보 전달<br>
+                        • 고명도, 고채도 색상 사용<br>
+                        • 그레이스케일로 확인<br>
+                        • 우리 팔레트 색상 활용
+                    </div>
+                    <div class="dont">
+                        <strong>✗ 하지 말아야 할 것</strong><br>
+                        • 색상만으로 정보 전달<br>
+                        • 파스텔톤 과다 사용<br>
+                        • 복잡한 배색<br>
+                        • 임의의 색상 추가
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- 폰트 가이드 -->
+            <div class="card">
+                <h2>📝 폰트 가이드</h2>
+                
+                <div class="highlight">
+                    <strong>기본 원칙:</strong> 산세리프 폰트, 충분한 크기, 명확한 대비
+                </div>
+                
+                <div class="spec-item">
+                    <strong>모바일 앱 권장 크기:</strong><br>
+                    • 본문: 16-19pt<br>
+                    • 제목: 20-24pt<br>
+                    • 최소: 13pt 이상
+                </div>
+                
+                <div class="size-demo size-13">13pt - 최소 크기 (이 정도는 되어야 해요)</div>
+                <div class="size-demo size-16">16pt - 권장 본문 크기 (읽기 편해요)</div>
+                <div class="size-demo size-19">19pt - 큰 본문 크기 (더 읽기 편해요)</div>
+                <div class="size-demo size-24">24pt - 제목 크기 (제목으로 좋아요)</div>
+                
+                <div class="spec-item">
+                    <strong>행간 및 자간:</strong><br>
+                    • 행간: 160-180%<br>
+                    • 단락 간격: 행간의 1.5배 이상
+                </div>
+                
+                <div class="checklist">
+                    <h4>폰트 체크리스트</h4>
+                    <ul>
+                        <li>산세리프 폰트 사용</li>
+                        <li>굵기는 Regular 이상</li>
+                        <li>이탤릭체, 밑줄 최소화</li>
+                        <li>폰트 크기 조절 기능 제공</li>
+                        <li>한 화면에 2가지 폰트 이하</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 버튼 및 터치 영역 -->
+            <div class="card">
+                <h2>👆 터치 영역 & 버튼</h2>
+                
+                <div class="highlight">
+                    <strong>핵심:</strong> 충분히 크고 간격이 넓은 터치 영역
+                </div>
+                
+                <div class="spec-item">
+                    <strong>최소 터치 영역:</strong><br>
+                    • 최소 크기: 44×44pt (9.6mm)<br>
+                    • 권장 크기: 48×48pt 이상<br>
+                    • 버튼 간 최소 간격: 8pt (2mm)
+                </div>
+                
+                <div class="spec-item">
+                    <strong>버튼 디자인:</strong><br>
+                    • 명확한 테두리 제공<br>
+                    • 눌림 상태 피드백<br>
+                    • 아이콘 + 텍스트 병기<br>
+                    • 배경과 명확한 대비
+                </div>
+                
+                <div class="warning">
+                    복잡한 제스처(더블탭, 드래그) 최소화하고 단순한 탭 위주로 설계
+                </div>
+            </div>
+
+            <!-- 레이아웃 가이드 -->
+            <div class="card">
+                <h2>📐 레이아웃 가이드</h2>
+                
+                <div class="highlight">
+                    <strong>원칙:</strong> 단순하고 일관된 구조, 한 화면 한 기능
+                </div>
+                
+                <div class="spec-item">
+                    <strong>정보 구조:</strong><br>
+                    • 3단계 이내의 깊이<br>
+                    • 한 화면에 7±2개 이하 메뉴<br>
+                    • 스크롤 최소화<br>
+                    • 중요 정보는 화면 중앙
+                </div>
+                
+                <div class="spec-item">
+                    <strong>일관성 유지:</strong><br>
+                    • 동일한 기능은 같은 위치<br>
+                    • 내비게이션 패턴 통일<br>
+                    • 색상 사용 규칙 일관성<br>
+                    • 용어 사용의 일관성
+                </div>
+                
+                <div class="do-dont">
+                    <div class="do">
+                        <strong>✓ 권장사항</strong><br>
+                        • 넓은 여백 활용<br>
+                        • 명확한 그룹핑<br>
+                        • 선형적 플로우<br>
+                        • 현재 위치 표시
+                    </div>
+                    <div class="dont">
+                        <strong>✗ 피해야 할 것</strong><br>
+                        • 복잡한 격자 레이아웃<br>
+                        • 과도한 스크롤<br>
+                        • 숨겨진 메뉴<br>
+                        • 자동 슬라이드
+                    </div>
+                </div>
+            </div>
+
+            <!-- 피드백 및 상호작용 -->
+            <div class="card">
+                <h2>💬 피드백 & 상호작용</h2>
+                
+                <div class="highlight">
+                    <strong>중요:</strong> 명확하고 즉각적인 피드백 제공
+                </div>
+                
+                <div class="spec-item">
+                    <strong>필수 피드백:</strong><br>
+                    • 버튼 클릭 시 시각적 변화<br>
+                    • 로딩 상태 표시<br>
+                    • 성공/실패 메시지<br>
+                    • 현재 진행 단계 표시
+                </div>
+                
+                <div class="spec-item">
+                    <strong>시간 고려사항:</strong><br>
+                    • 충분한 입력 시간 제공<br>
+                    • 타임아웃 전 20초 경고<br>
+                    • 시간 연장 옵션 제공<br>
+                    • 자동 갱신 제어 가능
+                </div>
+                
+                <div class="checklist">
+                    <h4>상호작용 체크리스트</h4>
+                    <ul>
+                        <li>오류 메시지 명확성</li>
+                        <li>실행 취소 기능 제공</li>
+                        <li>진행 상황 표시</li>
+                        <li>음성 안내 옵션</li>
+                        <li>도움말 쉬운 접근</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-full">
+            <!-- 접근성 고려사항 -->
+            <div class="card">
+                <h2>♿ 접근성 고려사항</h2>
+                
+                <div class="highlight">
+                    <strong>목표:</strong> 모든 사용자가 편리하게 사용할 수 있는 앱
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                    <div class="spec-item">
+                        <strong>시각 지원:</strong><br>
+                        • 글자 크기 조절 기능<br>
+                        • 고대비 모드 지원<br>
+                        • 화면 읽기 프로그램 호환<br>
+                        • 색맹 고려 디자인
+                    </div>
+                    
+                    <div class="spec-item">
+                        <strong>청각 지원:</strong><br>
+                        • 자막 제공<br>
+                        • 시각적 알림 병행<br>
+                        • 음량 조절 기능<br>
+                        • 진동 피드백 활용
+                    </div>
+                    
+                    <div class="spec-item">
+                        <strong>운동 능력 지원:</strong><br>
+                        • 음성 입력 지원<br>
+                        • 단순한 제스처만 사용<br>
+                        • 충분한 터치 영역<br>
+                        • 실수 방지 확인 창
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
